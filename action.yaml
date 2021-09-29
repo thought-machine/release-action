@@ -1,0 +1,17 @@
+name: 'Release Action'
+description: 'Creates github releases'
+inputs:
+  release-files:
+    description: 'Files to attach to the release'
+    required: false
+  version-file:
+    description: 'File containing the current version'
+    required: true
+    default: "VERSION"
+  change-log:
+    description: 'File containing the change log'
+    required: true
+    default: "ChangeLog"
+runs:
+  using: 'node12'
+  main: 'dist/index.js'
