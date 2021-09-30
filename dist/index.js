@@ -8512,17 +8512,17 @@ const path = __nccwpck_require__(5622)
 function hash(data) {
     const hash = crypto.createHash("sha256")
     hash.write(data)
-    return hash.digest()
+    return hash.digest("hex")
 }
 
 async function run() {
     try {
         const octokit = github.getOctokit(process.env.GITHUB_TOKEN);
+
         const releaseFiles = core.getInput("release-files")
         const versionFile = core.getInput("version-file")
         const changelogFile = core.getInput("change-log-file")
 
-        // TODO(jpoole): validate this is a semver version
         const version = fs.readFileSync(versionFile).toString().trim()
         const changeLog = fs.readFileSync(changelogFile).toString()
 
@@ -8532,60 +8532,72 @@ async function run() {
             core.setFailed("Couldn't find changes for v" + version);
         }
 
-        let existingReleaseResp
+        let uploadUrl = undefined
+        let releaseId = undefined
+
         try {
             existingReleaseResp = await octokit.rest.repos.getReleaseByTag({
                 owner: github.context.repo.owner,
                 repo: github.context.repo.repo,
                 tag: "v" + version,
             })
+            uploadUrl = existingReleaseResp.data.upload_url
+            releaseId = existingReleaseResp.data.id
         } catch (_) {
             // This thing throws an exception on 404...
         }
 
-        if (existingReleaseResp !== undefined) {
-            core.info("Release already created. Nothing to do. ")
+        if (uploadUrl === undefined) {
+            const createReleaseResp = await octokit.rest.repos.createRelease({
+                owner: github.context.repo.owner,
+                repo: github.context.repo.repo,
+                tag_name: "v" + version,
+                name: "v" + version,
+                body: changes,
+                prerelease: version.includes("beta") || version.includes("alpha") || version.includes("prerelease"),
+                target_commitish: github.context.sha,
+            })
+
+            uploadUrl = createReleaseResp.data.upload_url
+            releaseId = createReleaseResp.data.id
+        } else {
+            console.log("Release already created. Nothing to do.")
             return
         }
 
-        const createReleaseResp = await octokit.rest.repos.createRelease({
-            owner: github.context.repo.owner,
-            repo: github.context.repo.repo,
-            tag_name: "v" + version,
-            name: "v" + version,
-            body: changes,
-            prerelease: version.includes("beta") || version.includes("alpha") || version.includes("prerelease"),
-            target_commitish: github.context.sha,
-        })
+        console.log("Uploading release assets... ")
+        const files = fs.readdirSync(releaseFiles, {withFileTypes: true})
 
-        fs.readdirSync(releaseFiles, {withFileTypes: true}).forEach(file => {
+        for(let i = 0; i < files.length; i++) {
+            const file = files[i]
+
             if (file.isFile()) {
                 const fileData = fs.readFileSync(path.join(releaseFiles, file.name))
                 const hashsum = hash(fileData)
 
-                octokit.rest.repos.uploadReleaseAsset({
+                await octokit.rest.repos.uploadReleaseAsset({
                     repo: github.context.repo.repo,
                     owner: github.context.repo.owner,
-                    release_id: createReleaseResp.data.release_id,
+                    release_id: releaseId,
                     name: file.name,
                     data: fileData,
-                    origin: createReleaseResp.data.upload_url
+                    origin: uploadUrl
                 })
 
-                octokit.rest.repos.uploadReleaseAsset({
+                await octokit.rest.repos.uploadReleaseAsset({
                     repo: github.context.repo.repo,
                     owner: github.context.repo.owner,
-                    release_id: createReleaseResp.data.release_id,
+                    release_id: releaseId,
                     name: file.name + ".sha256",
                     data: hashsum,
-                    origin: createReleaseResp.data.upload_url
+                    origin: uploadUrl
                 })
             }
-        })
+        }
     } catch (error) {
+        console.log(error)
         core.setFailed(error.message);
     }
-
 }
 
 
