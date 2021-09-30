@@ -1,9 +1,9 @@
 const core = require('@actions/core');
-const {GitHub, context} = require('@actions/github');
+const github = require('@actions/github');
 const fs = require('fs')
 
 try {
-    const github = new GitHub(process.env.GITHUB_TOKEN);
+    const octokit = github.getOctokit(process.env.GITHUB_TOKEN);
 
     // TODO(jpoole): validate this is a semver version
     const version = fs.readFileSync("VERSION").toString().trim()
@@ -11,14 +11,14 @@ try {
 
     const changes = findTagChangelogs(changeLog, version)
 
-    github.repos.createRelease({
-        owner: context.repo.owner,
-        repo: context.repo.repo,
+    octokit.repos.createRelease({
+        owner: github.context.repo.owner,
+        repo: github.context.repo.repo,
         tag_name: "v"+version,
         name: "v"+version,
         body: changes,
         prerelease: version.includes("beta") || version.includes("alpha") || version.includes("prerelease"),
-        target_commitish: context.sha,
+        target_commitish: github.context.sha,
     }).catch(error => {
         core.setFailed(error.message);
     })
