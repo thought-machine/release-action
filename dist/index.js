@@ -8508,6 +8508,10 @@ try {
 
     const changes = findTagChangelogs(changeLog, version)
 
+    if (changes === undefined || changes === "") {
+        core.setFailed("Couldn't find changes for v" + version);
+    }
+
     octokit.rest.repos.createRelease({
         owner: github.context.repo.owner,
         repo: github.context.repo.repo,
@@ -8557,7 +8561,7 @@ function findTagChangelogs(changelog, tag) {
             logs.push("  " + line)
         }
     }
-    return undefined
+    return logs.join("\n")
 }
 
 exports.findTagChangelogs = findTagChangelogs

@@ -1,6 +1,6 @@
 const release = require("./release")
 
-const testTest = `
+const multiLineTest = `
 Version 16.6.0
 --------------
     * Fixed issue with \`go_module()\` where adding the root package removed
@@ -41,6 +41,10 @@ Version 16.4.1
 
 `
 
+const singleLineTest = `Version 0.1.0
+-------------
+    * Initial commit
+`
 const exepctedResult = `
 * Singleflight all subincludes removing any potential for lockups #2002
 * Implemented target level locking enabling multiple please instances to
@@ -50,7 +54,12 @@ const exepctedResult = `
 * Various fixes and improvements around bash completions #1998 #2013
 `
 
-test("releaseParseTest", () => {
-    const result = release.findTagChangelogs(testTest, "16.5.0").trim()
-    expect(result).toContain(exepctedResult.trim())
+test("parseMultipleReleaseLogs", () => {
+    const result = release.findTagChangelogs(multiLineTest, "16.5.0").trim()
+    expect(result).toBe(exepctedResult.trim())
+})
+
+test("parseSingleReleaseLog", () => {
+    const result = release.findTagChangelogs(singleLineTest, "0.1.0").trim()
+    expect(result).toBe("* Initial commit")
 })
