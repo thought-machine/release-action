@@ -21,7 +21,7 @@ async function run() {
             owner: github.context.repo.owner,
             repo: github.context.repo.repo,
             tag: "v" + version,
-        })
+        }).catch()
 
         if (releaseUrl !== undefined) {
             core.info("Release already created. Nothing to do: " + releaseUrl)
