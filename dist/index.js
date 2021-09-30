@@ -8496,11 +8496,11 @@ var __webpack_exports__ = {};
 (() => {
 var exports = __webpack_exports__;
 const core = __nccwpck_require__(6964);
-const {GitHub, context} = __nccwpck_require__(8033);
+const github = __nccwpck_require__(8033);
 const fs = __nccwpck_require__(5747)
 
 try {
-    const github = new GitHub(process.env.GITHUB_TOKEN);
+    const octokit = github.getOctokit(process.env.GITHUB_TOKEN);
 
     // TODO(jpoole): validate this is a semver version
     const version = fs.readFileSync("VERSION").toString().trim()
@@ -8508,14 +8508,14 @@ try {
 
     const changes = findTagChangelogs(changeLog, version)
 
-    github.repos.createRelease({
-        owner: context.repo.owner,
-        repo: context.repo.repo,
+    octokit.repos.createRelease({
+        owner: github.context.repo.owner,
+        repo: github.context.repo.repo,
         tag_name: "v"+version,
         name: "v"+version,
         body: changes,
         prerelease: version.includes("beta") || version.includes("alpha") || version.includes("prerelease"),
-        target_commitish: context.sha,
+        target_commitish: github.context.sha,
     }).catch(error => {
         core.setFailed(error.message);
     })
