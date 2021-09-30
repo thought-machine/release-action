@@ -2,33 +2,49 @@ const core = require('@actions/core');
 const github = require('@actions/github');
 const fs = require('fs')
 
-try {
-    const octokit = github.getOctokit(process.env.GITHUB_TOKEN);
+async function run() {
+    try {
+        const octokit = github.getOctokit(process.env.GITHUB_TOKEN);
 
-    // TODO(jpoole): validate this is a semver version
-    const version = fs.readFileSync("VERSION").toString().trim()
-    const changeLog = fs.readFileSync("ChangeLog").toString()
+        // TODO(jpoole): validate this is a semver version
+        const version = fs.readFileSync("VERSION").toString().trim()
+        const changeLog = fs.readFileSync("ChangeLog").toString()
 
-    const changes = findTagChangelogs(changeLog, version)
+        const changes = findTagChangelogs(changeLog, version)
 
-    if (changes === undefined || changes === "") {
-        core.setFailed("Couldn't find changes for v" + version);
+        if (changes === undefined || changes === "") {
+            core.setFailed("Couldn't find changes for v" + version);
+        }
+
+
+        const releaseUrl = await octokit.rest.repos.getReleaseByTag({
+            owner: github.context.repo.owner,
+            repo: github.context.repo.repo,
+            tag: "v" + version,
+        })
+
+        if (releaseUrl !== undefined) {
+            core.info("Release already created. Nothing to do.")
+        }
+
+        const url = await octokit.rest.repos.createRelease({
+            owner: github.context.repo.owner,
+            repo: github.context.repo.repo,
+            tag_name: "v" + version,
+            name: "v" + version,
+            body: changes,
+            prerelease: version.includes("beta") || version.includes("alpha") || version.includes("prerelease"),
+            target_commitish: github.context.sha,
+        })
+
+        core.info(url)
+
+    } catch (error) {
+        core.setFailed(error.message);
     }
 
-    octokit.rest.repos.createRelease({
-        owner: github.context.repo.owner,
-        repo: github.context.repo.repo,
-        tag_name: "v"+version,
-        name: "v"+version,
-        body: changes,
-        prerelease: version.includes("beta") || version.includes("alpha") || version.includes("prerelease"),
-        target_commitish: github.context.sha,
-    }).catch(error => {
-        core.setFailed(error.message);
-    })
-} catch (error) {
-    core.setFailed(error.message);
 }
+
 
 function findTagChangelogs(changelog, tag) {
     const versionString = "Version " + tag
@@ -66,5 +82,7 @@ function findTagChangelogs(changelog, tag) {
     }
     return logs.join("\n")
 }
+
+run()
 
 exports.findTagChangelogs = findTagChangelogs
