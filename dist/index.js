@@ -8521,7 +8521,8 @@ async function run() {
         })
 
         if (releaseUrl !== undefined) {
-            core.info("Release already created. Nothing to do.")
+            core.info("Release already created. Nothing to do: " + releaseUrl)
+            return
         }
 
         const url = await octokit.rest.repos.createRelease({
