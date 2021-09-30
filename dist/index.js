@@ -8513,15 +8513,19 @@ async function run() {
             core.setFailed("Couldn't find changes for v" + version);
         }
 
-
-        const releaseUrl = await octokit.rest.repos.getReleaseByTag({
-            owner: github.context.repo.owner,
-            repo: github.context.repo.repo,
-            tag: "v" + version,
-        }).catch(_ => {})
+        let releaseUrl
+        try {
+            releaseUrl = await octokit.rest.repos.getReleaseByTag({
+                owner: github.context.repo.owner,
+                repo: github.context.repo.repo,
+                tag: "v" + version,
+            })
+        } catch (_) {
+            // This thing throws an exception on 404...
+        }
 
         if (releaseUrl !== undefined) {
-            core.info("Release already created. Nothing to do: " + releaseUrl)
+            core.info("Release already created. Nothing to do. ")
             return
         }
 
@@ -8535,7 +8539,7 @@ async function run() {
             target_commitish: github.context.sha,
         })
 
-        core.info(url)
+        core.info(JSON.stringify(url))
 
     } catch (error) {
         core.setFailed(error.message);

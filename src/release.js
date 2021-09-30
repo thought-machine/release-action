@@ -28,7 +28,7 @@ async function run() {
         }
 
         if (releaseUrl !== undefined) {
-            core.info("Release already created. Nothing to do: " + releaseUrl)
+            core.info("Release already created. Nothing to do. ")
             return
         }
 
@@ -42,7 +42,7 @@ async function run() {
             target_commitish: github.context.sha,
         })
 
-        core.info(url)
+        core.info(JSON.stringify(url))
 
     } catch (error) {
         core.setFailed(error.message);
