@@ -11,7 +11,7 @@ try {
 
     const changes = findTagChangelogs(changeLog, version)
 
-    octokit.repos.createRelease({
+    octokit.rest.repos.createRelease({
         owner: github.context.repo.owner,
         repo: github.context.repo.repo,
         tag_name: "v"+version,
