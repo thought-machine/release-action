@@ -1,4 +1,7 @@
 const release = require("./release")
+const fs = require('fs')
+
+
 
 const multiLineTest = `
 Version 16.6.0

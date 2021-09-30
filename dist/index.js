@@ -8349,6 +8349,14 @@ module.exports = require("assert");
 
 /***/ }),
 
+/***/ 6417:
+/***/ ((module) => {
+
+"use strict";
+module.exports = require("crypto");
+
+/***/ }),
+
 /***/ 8614:
 /***/ ((module) => {
 
@@ -8498,14 +8506,25 @@ var exports = __webpack_exports__;
 const core = __nccwpck_require__(6964);
 const github = __nccwpck_require__(8033);
 const fs = __nccwpck_require__(5747)
+const crypto = __nccwpck_require__(6417)
+const path = __nccwpck_require__(5622)
+
+function hash(data) {
+    const hash = crypto.createHash("sha256")
+    hash.write(data)
+    return hash.digest()
+}
 
 async function run() {
     try {
         const octokit = github.getOctokit(process.env.GITHUB_TOKEN);
+        const releaseFiles = core.getInput("release-files")
+        const versionFile = core.getInput("version-file")
+        const changelogFile = core.getInput("change-log-file")
 
         // TODO(jpoole): validate this is a semver version
-        const version = fs.readFileSync("VERSION").toString().trim()
-        const changeLog = fs.readFileSync("ChangeLog").toString()
+        const version = fs.readFileSync(versionFile).toString().trim()
+        const changeLog = fs.readFileSync(changelogFile).toString()
 
         const changes = findTagChangelogs(changeLog, version)
 
@@ -8513,9 +8532,9 @@ async function run() {
             core.setFailed("Couldn't find changes for v" + version);
         }
 
-        let releaseUrl
+        let existingReleaseResp
         try {
-            releaseUrl = await octokit.rest.repos.getReleaseByTag({
+            existingReleaseResp = await octokit.rest.repos.getReleaseByTag({
                 owner: github.context.repo.owner,
                 repo: github.context.repo.repo,
                 tag: "v" + version,
@@ -8524,12 +8543,12 @@ async function run() {
             // This thing throws an exception on 404...
         }
 
-        if (releaseUrl !== undefined) {
+        if (existingReleaseResp !== undefined) {
             core.info("Release already created. Nothing to do. ")
             return
         }
 
-        const url = await octokit.rest.repos.createRelease({
+        const createReleaseResp = await octokit.rest.repos.createRelease({
             owner: github.context.repo.owner,
             repo: github.context.repo.repo,
             tag_name: "v" + version,
@@ -8539,8 +8558,30 @@ async function run() {
             target_commitish: github.context.sha,
         })
 
-        core.info(JSON.stringify(url))
+        fs.readdirSync(releaseFiles, {withFileTypes: true}).forEach(file => {
+            if (file.isFile()) {
+                const fileData = fs.readFileSync(path.join(releaseFiles, file.name))
+                const hashsum = hash(fileData)
 
+                octokit.rest.repos.uploadReleaseAsset({
+                    repo: github.context.repo.repo,
+                    owner: github.context.repo.owner,
+                    release_id: createReleaseResp.data.release_id,
+                    name: file.name,
+                    data: fileData,
+                    origin: createReleaseResp.data.upload_url
+                })
+
+                octokit.rest.repos.uploadReleaseAsset({
+                    repo: github.context.repo.repo,
+                    owner: github.context.repo.owner,
+                    release_id: createReleaseResp.data.release_id,
+                    name: file.name + ".sha256",
+                    data: hashsum,
+                    origin: createReleaseResp.data.upload_url
+                })
+            }
+        })
     } catch (error) {
         core.setFailed(error.message);
     }
@@ -8588,6 +8629,9 @@ function findTagChangelogs(changelog, tag) {
 run()
 
 exports.findTagChangelogs = findTagChangelogs
+
+
+
 })();
 
 module.exports = __webpack_exports__;
