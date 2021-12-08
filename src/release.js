@@ -4,10 +4,10 @@ const fs = require('fs')
 const crypto = require("crypto")
 const path = require('path')
 
-function hash(data) {
+function hash(data, name) {
     const hash = crypto.createHash("sha256")
     hash.write(data)
-    return hash.digest("hex")
+    return hash.digest("hex") + "  " + name + "\n"
 }
 
 async function run() {
@@ -18,7 +18,8 @@ async function run() {
         const versionFile = core.getInput("version-file")
         const changelogFile = core.getInput("change-log-file")
 
-        const version = fs.readFileSync(versionFile).toString().trim()
+        const version = fs.readFileSync(versionFile).toString().trim().replace(/^v/,"");
+
         const changeLog = fs.readFileSync(changelogFile).toString()
 
         const changes = findTagChangelogs(changeLog, version)
@@ -43,6 +44,8 @@ async function run() {
         }
 
         if (uploadUrl === undefined) {
+            console.log("Creating release v" + version + "...")
+
             const createReleaseResp = await octokit.rest.repos.createRelease({
                 owner: github.context.repo.owner,
                 repo: github.context.repo.repo,
@@ -60,33 +63,37 @@ async function run() {
             return
         }
 
-        console.log("Uploading release assets... ")
-        const files = fs.readdirSync(releaseFiles, {withFileTypes: true})
+        if (releaseFiles !== "") {
+            console.log("Uploading release assets... ")
+            const files = fs.readdirSync(releaseFiles, {withFileTypes: true})
 
-        for(let i = 0; i < files.length; i++) {
-            const file = files[i]
+            for(let i = 0; i < files.length; i++) {
+                const file = files[i]
 
-            if (file.isFile()) {
-                const fileData = fs.readFileSync(path.join(releaseFiles, file.name))
-                const hashsum = hash(fileData)
+                if (file.isFile()) {
+                    const fileData = fs.readFileSync(path.join(releaseFiles, file.name))
+                    const hashsum = hash(fileData, file.name)
 
-                await octokit.rest.repos.uploadReleaseAsset({
-                    repo: github.context.repo.repo,
-                    owner: github.context.repo.owner,
-                    release_id: releaseId,
-                    name: file.name,
-                    data: fileData,
-                    origin: uploadUrl
-                })
+                    await octokit.rest.repos.uploadReleaseAsset({
+                        repo: github.context.repo.repo,
+                        owner: github.context.repo.owner,
+                        release_id: releaseId,
+                        name: file.name,
+                        data: fileData,
+                        origin: uploadUrl
+                    })
 
-                await octokit.rest.repos.uploadReleaseAsset({
-                    repo: github.context.repo.repo,
-                    owner: github.context.repo.owner,
-                    release_id: releaseId,
-                    name: file.name + ".sha256",
-                    data: hashsum,
-                    origin: uploadUrl
-                })
+                    await octokit.rest.repos.uploadReleaseAsset({
+                        repo: github.context.repo.repo,
+                        owner: github.context.repo.owner,
+                        release_id: releaseId,
+                        name: file.name + ".sha256",
+                        data: hashsum,
+                        origin: uploadUrl
+                    })
+
+                    console.log(file.name + "... done.")
+                }
             }
         }
     } catch (error) {
