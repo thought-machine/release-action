@@ -33,11 +33,16 @@ async function run() {
         let uploadUrl = undefined
         let releaseId = undefined
 
+        let releaseName = `v${version}`
+        if(releasePrefix !== "") {
+            releaseName = `${releasePrefix}-${releaseName}`
+        }
+
         try {
             existingReleaseResp = await octokit.rest.repos.getReleaseByTag({
                 owner: github.context.repo.owner,
                 repo: github.context.repo.repo,
-                tag: "v" + version,
+                tag: releaseName,
             })
             uploadUrl = existingReleaseResp.data.upload_url
             releaseId = existingReleaseResp.data.id
@@ -46,10 +51,6 @@ async function run() {
         }
 
         if (uploadUrl === undefined) {
-            let releaseName = `v${version}`
-            if(releasePrefix !== "") {
-                releaseName = `${releasePrefix}-${releaseName}`
-            }
             console.log(`Creating release ${releaseName}...`)
 
             const createReleaseResp = await octokit.rest.repos.createRelease({
