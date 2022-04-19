@@ -17,6 +17,7 @@ async function run() {
         const releaseFiles = core.getInput("release-files")
         const versionFile = core.getInput("version-file")
         const changelogFile = core.getInput("change-log-file")
+        const releasePrefix = core.getInput("release-prefix")
 
         const version = fs.readFileSync(versionFile).toString().trim().replace(/^v/,"");
 
@@ -26,6 +27,7 @@ async function run() {
 
         if (changes === undefined || changes === "") {
             core.setFailed("Couldn't find changes for v" + version);
+            return
         }
 
         let uploadUrl = undefined
@@ -44,15 +46,19 @@ async function run() {
         }
 
         if (uploadUrl === undefined) {
-            console.log("Creating release v" + version + "...")
+            let releaseName = `v${version}`
+            if(releasePrefix !== "") {
+                releaseName = `${releasePrefix}-${releaseName}`
+            }
+            console.log(`Creating release ${releaseName}...`)
 
             const createReleaseResp = await octokit.rest.repos.createRelease({
                 owner: github.context.repo.owner,
                 repo: github.context.repo.repo,
-                tag_name: "v" + version,
-                name: "v" + version,
+                tag_name: releaseName,
+                name: releaseName,
                 body: changes,
-                prerelease: version.includes("beta") || version.includes("alpha") || version.includes("prerelease"),
+                prerelease: version.includes("-"),
                 target_commitish: github.context.sha,
             })
 

@@ -1,8 +1,9 @@
 # Release action
 
 A github action to produce a release. This project was created in frustration 
-with the existing release actions in the wild. The main goal was to base releases
-based entirely off files that are checked in to version control. 
+with the existing release actions in the wild. The main goal was to release
+based entirely off files that are checked in to version control, following
+the "configuration as code" philosophy. 
 
 This action uses two files:
 
@@ -14,11 +15,12 @@ action will create a new github release accordingly. Release artefacts
 can be added as well via the `releaseFiles` parameter.
 
 
-# Basic usage
+## Basic usage
 
-1) Create a file called `VERSION`, containing the semantic version e.g. `v0.2.0`.
+1) Create a file called `VERSION`, containing the semantic version e.g. `v1.2.3`. Versions
+   containing a prerelease postfix will be marked as such on the projects releases page. 
 
-2) Create a file called ChangeLog with a entry for this version. This file doubles 
+3) Create a file called ChangeLog with a entry for this version. This file doubles 
    as a historical record of all change logs and has the following format:
 ```
 Version 0.2.0
@@ -51,7 +53,12 @@ jobs:
       - name: Release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        uses: tatskaari/release-action@v0.2.5
+        uses: tatskaari/release-action@v0.3.0
         with:
           release-files: out/package # A directory containing all the files to release
 ```
+
+## Multiple releases
+
+Sometimes there are multiple components or "modules" in a repo that should be released independently. To facilitate
+this, this action can be repeated. Create a 
