@@ -12,6 +12,9 @@ inputs:
     description: 'File containing the change log'
     required: true
     default: "ChangeLog"
+  release-prefix:
+    description: 'A prefix to add to the release tag. This can be used releases multiple components in the same repo.'
+    required: false
 runs:
   using: 'node12'
   main: 'dist/index.js'
