@@ -56,9 +56,37 @@ jobs:
         uses: tatskaari/release-action@v0.3.0
         with:
           release-files: out/package # A directory containing all the files to release
+          # version-file: VERSION
+          # change-log-file: ChangeLog
 ```
 
 ## Multiple releases
 
 Sometimes there are multiple components or "modules" in a repo that should be released independently. To facilitate
-this, this action can be repeated. Create a 
+this, this action can be repeated, specifying a different prefix for each component:
+
+```
+name: X
+on: [push, pull_request]
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/master'
+    steps:
+      ...
+      - name: Release tools
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        uses: tatskaari/release-action@v0.3.0
+        with:
+          release-files: out/tools # A directory containing all the files to release
+          version-file: tools/VERSION
+          change-log-file: tools/ChangeLog
+          release-prefix: tools
+      - name: Release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        uses: tatskaari/release-action@v0.3.0
+```
+
+This will result in tags like `tools-vX.X.X` from the `Release tools` step, and `vX.X.X` for the main `Release` step. 
