@@ -1,5 +1,7 @@
 const core = require('@actions/core');
 const github = require('@actions/github');
+const Octokit = require("@octokit/rest").Octokit;
+const retry = require("@octokit/plugin-retry").retry;
 const fs = require('fs')
 const crypto = require("crypto")
 const path = require('path')
@@ -12,7 +14,13 @@ function hash(data, name) {
 
 async function run() {
     try {
-        const octokit = github.getOctokit(process.env.GITHUB_TOKEN);
+        const retryableOctokit = Octokit.plugin(retry)
+        const octokit = new retryableOctokit({
+            auth: process.env.GITHUB_TOKEN,
+            retry: {
+                doNotRetry: ["429"],
+            },
+        });
 
         const releaseFiles = core.getInput("release-files")
         const versionFile = core.getInput("version-file")
@@ -150,5 +158,3 @@ function findTagChangelogs(changelog, tag) {
 run()
 
 exports.findTagChangelogs = findTagChangelogs
-
-

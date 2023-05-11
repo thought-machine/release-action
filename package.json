@@ -21,6 +21,8 @@
   "dependencies": {
     "@actions/core": "^1.6.0",
     "@actions/github": "^5.0.0",
+    "@octokit/plugin-retry": "^4.0.0",
+    "@octokit/rest": "^19.0.0",
     "crypto-js": "^4.1.1",
     "sha.js": "^2.4.11"
   },
