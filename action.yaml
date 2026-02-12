@@ -16,5 +16,5 @@ inputs:
     description: 'A prefix to add to the release tag. This can be used releases multiple components in the same repo.'
     required: false
 runs:
-  using: 'node12'
+  using: 'node24'
   main: 'dist/index.js'
