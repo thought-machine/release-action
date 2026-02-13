@@ -90,3 +90,13 @@ jobs:
 ```
 
 This will result in tags like `tools-vX.X.X` from the `Release tools` step, and `vX.X.X` for the main `Release` step.
+
+## Outputs
+
+The action produces the following outputs for use by subsequent steps:
+
+| Name | Description | Example |
+| - | - | - |
+| `release-created` | `true` if the action created a GitHub release, or `false` if it did not. | `true` |
+| `release-tag` | If a release was created, the name of the tag created for the release in the repository. | `v1.2.3` |
+| `release-id` | If a release was created, the ID assigned to the release by GitHub. This ID uniquely identifies the release in several [GitHub API endpoints](https://docs.github.com/en/rest/releases/releases). | `42` |
