@@ -6,6 +6,10 @@ const fs = require('fs')
 const crypto = require("crypto")
 const path = require('path')
 
+const RELEASE_CREATED_OUTPUT_NAME = "release-created"
+const RELEASE_TAG_OUTPUT_NAME = "release-tag"
+const RELEASE_ID_OUTPUT_NAME = "release-id"
+
 function hash(data, name) {
     const hash = crypto.createHash("sha256")
     hash.write(data)
@@ -73,7 +77,12 @@ async function run() {
 
             uploadUrl = createReleaseResp.data.upload_url
             releaseId = createReleaseResp.data.id
+
+            core.setOutput(RELEASE_CREATED_OUTPUT_NAME, true)
+            core.setOutput(RELEASE_TAG_OUTPUT_NAME, releaseName)
+            core.setOutput(RELEASE_ID_OUTPUT_NAME, releaseId)
         } else {
+            core.setOutput(RELEASE_CREATED_OUTPUT_NAME, false)
             console.log("Release already created. Nothing to do.")
             return
         }
